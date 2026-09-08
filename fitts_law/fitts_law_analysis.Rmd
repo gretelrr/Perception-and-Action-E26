@@ -1,0 +1,47 @@
+---
+title: "fitts_law_analysis"
+author: "Grete Liis Reimand"
+date: "2026-09-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# load relevant libraries
+knitr::opts_chunk$set(echo = TRUE)
+library(performance)
+library(ggplot2)
+library(lmerTest)
+library(tidyverse)
+```
+
+```{r}
+# read in the data
+data = 
+```
+
+```{r}
+# make a model predicting time from difficulty
+# include (1|id) for multilevel modelling (fret not, this will be explained in methods3 if you're not familiar with it)
+
+model = lmer() # fill in the model here
+summary(model)
+r2(model) 
+```
+
+```{r}
+# add the model predictions to the data frame
+# hint: mutate()
+
+
+```
+
+
+```{r}
+# make a ggplot which shows time predictions from difficulty index, with separate lines for each participant
+
+data %>% 
+  ggplot() +
+  
+```
+
+
