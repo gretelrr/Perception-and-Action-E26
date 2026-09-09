@@ -21,7 +21,7 @@ data =
 
 ```{r}
 # make a model predicting time from difficulty
-# include (1|id) for multilevel modelling (fret not, this will be explained in methods3 if you're not familiar with it)
+# include (1 + difficulty_idx|id) for multilevel modelling (fret not, this will be explained in methods3 if you're not familiar with it)
 
 model = lmer() # fill in the model here
 summary(model)
