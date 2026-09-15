@@ -1,0 +1,229 @@
+---
+title: "Crossmodal - Solution file"
+author: "Laura Bock Paulsen"
+date: "9/9/2022"
+output: html_document
+---
+
+The exercises are created by Laura B Paulsen and edited by Grete Liis Reimand
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE) 
+```
+
+```{r}
+pacman::p_load(tidyverse, readbulk, patchwork, lmerTest)
+```
+
+For this class, the aim is to investigate some cross modal effects. The data is from 4 years ago but based on the same experiment you may have completed at home.
+
+There are 4 steps to today's exercise: 
+
+1) Load in data
+2) Investigation and preparation of the data
+3) Investigate if congruency predicts reaction time using linear regression
+4) Visualization of accuracy rate
+
+
+Enjoy!
+
+## Load in data
+
+### Download data
+First of all, you need to download the data from the Google drive folder: **https://drive.google.com/drive/folders/19HsBvrrnRynsn0z90iZhqL5SRaj-nnlw?usp=sharing** or just skip to the next step if you cloned the GitHub repo (data should be included).
+
+### Load data
+Load in the data.
+```{r, message=FALSE}
+aud <- read_bulk(
+  directory = 'data_aud/',
+  fun = read_csv,
+  col_types = cols()  # suppresses the annoying column specifications (not needed to run)
+  )
+
+vis <- read_bulk(
+  directory = 'data_vis/',
+  fun = read_csv,
+  col_types = cols()
+  )
+```
+Hint: you can use read_bulk() from the readbulk package to load the different csv files into one dataframe (one df for vision, one for audition). 
+
+
+### Discussion
+Before you start looking at the data, discuss what predictions you have and why. 
+
+
+# Investigation and preperation of the data
+
+### Data structure
+To begin with try to get an overview of the data by answering the following questions:
+
+What variables do we have? 
+```{r}
+colnames(aud)
+```
+
+Which variables are we interested in? 
+**Write your answer here**
+
+Are the variables in the right format (e.g., factor, numeric)? If they are not, make sure they are.
+```{r}
+# AUDITION 
+aud <- aud %>% 
+  mutate(
+    accuracy = as.factor(accuracy),
+    congruency = as.factor(congruency),
+    subject = as.factor(subject)
+)
+
+# VISION
+vis <- vis %>% 
+  mutate(
+    accuracy = as.factor(accuracy),
+    congruency = as.factor(congruency),
+    subject = as.factor(subject)
+)
+```
+
+How many participants do we have in each condition?
+```{r}
+length(unique(aud$subject))
+length(unique(vis$subject))
+```
+
+Create new dataframes that only contains the correct trials. The dataframes with both correct and incorrect trials will be used in the last part of the exercise, so do not overwrite this. 
+```{r}
+vis_correct <- vis %>% 
+  filter(accuracy == 'TRUE')
+
+aud_correct <- aud %>% 
+  filter(accuracy == 'TRUE')
+```
+
+
+### Initial plot
+To further look into the data, lets make a quick plot! More specifically, make a plot of the mean reaction time per concurrency. Make sure to include errorbars. 
+```{r}
+# AUDITION
+aud_correct %>% 
+  ggplot() +
+  aes(x = congruency, y = rt, color = congruency) +
+  stat_summary(fun = "mean", geom = "point", size = 3) +
+  stat_summary(fun = 'mean', geom = 'line', color = 'gray55', aes(group = 1)) +
+  stat_summary(fun.data = "mean_se", geom = "errorbar", width = .1) +
+  theme(legend.position = 'None') +
+  labs(title = 'Mean RT of audition with SE errorbars') +
+  theme_classic()
+
+# VISION
+vis_correct %>% 
+  ggplot() +
+  aes(x = congruency, y = rt, color = congruency) +
+  stat_summary(fun = "mean", geom = "point", size = 3) +
+  stat_summary(fun = 'mean', geom = 'line', color = 'gray55', aes(group = 1)) +
+  stat_summary(fun.data = "mean_se", geom = "errorbar", width = .1) +
+  theme(legend.position = 'None') +
+  labs(title = 'Mean RT of vision with SE errorbars')+
+  theme_classic()
+```
+
+### Discussion
+Interpret the findings. Do they match your predictions? Why? Why not? 
+
+
+# Investigate if congruency predicts reaction time using a linear model
+Does congruency predict the reaction time? Lets find out. 
+
+To do this, make a simple linear model. 
+```{r}
+# hint: make a multilevel models, meaning include (1|subject) and lmer instead of lm, the rest is the same as a simple lm model
+
+# AUDITION
+m_aud <- lmer(rt ~ congruency + (1|subject), data = aud_correct)
+summary(m_aud)
+
+# VISION
+m_vis <- lmer(rt ~ congruency + (1|subject), data = vis_correct)
+summary(m_vis)
+```
+
+### Report the results
+Write a 1-2 sentence results as you would in the results section of your exam project.
+
+# Calculate number of correct trials out of all trials per participant in either condition (for both visual and auditory data)
+```{r}
+aud_correct %>% 
+  group_by(subject, congruency) %>% 
+  summarize(acc_percent=(n()/32*100))
+
+vis_correct %>% 
+  group_by(subject, congruency) %>% 
+  summarize(acc_percent=(n()/32*100))
+```
+
+# Visualization of accuracy rate
+Make a graph of the accuracy rate. Is there a way to visualize the relationship between congruency and the percentage of incorrectly answered trials per subject?
+
+```{r}
+# AUDITION
+p1 <- aud %>% 
+  group_by(subject, congruency) %>%
+  filter(accuracy == 'FALSE') %>% 
+  summarize(perc_acc=(n()/32)*100) %>% #32 trials per participant
+  ggplot +
+  aes(x=congruency, y=perc_acc, color=subject) + 
+  geom_point() + 
+  geom_line(aes(group=subject)) +
+  labs(title = 'Audition') +
+  theme_classic()
+
+# VISION
+p2 <- vis %>% 
+  group_by(subject, congruency) %>%
+  filter(accuracy == 'FALSE') %>% 
+  summarize(perc_acc=(n()/32)*100) %>%
+  ggplot +
+  aes(x=congruency, y=perc_acc, color=subject) + 
+  geom_point() + 
+  geom_line(aes(group=subject)) +
+  labs(title = 'Vision') +
+  theme_classic()
+
+p1
+p2
+```
+Hint: Which data frames contain both correct and incorrect trials?
+
+### Discussion
+Discuss the resulting plots.
+
+# If you have the time, make the same plots for correct trials and interpret the plots
+```{r}
+# AUDITION
+p3 <- aud %>% 
+  group_by(subject, congruency) %>%
+  filter(accuracy == 'TRUE') %>% 
+  summarize(perc_acc=(n()/32)*100) %>% #32 trials per participant
+  ggplot +
+  aes(x=congruency, y=perc_acc, color=subject) + 
+  geom_point() + 
+  geom_line(aes(group=subject)) +
+  labs(title = 'Audition') +
+  theme_classic()
+
+# VISION
+p4 <- vis %>% 
+  group_by(subject, congruency) %>%
+  filter(accuracy == 'TRUE') %>% 
+  summarize(perc_acc=(n()/32)*100) %>%
+  ggplot +
+  aes(x=congruency, y=perc_acc, color=subject) + 
+  geom_point() + 
+  geom_line(aes(group=subject)) +
+  labs(title = 'Vision') +
+  theme_classic()
+
+p3
+p4
+```
