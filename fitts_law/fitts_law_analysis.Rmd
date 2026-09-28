@@ -16,14 +16,16 @@ library(tidyverse)
 
 ```{r}
 # read in the data
-data = 
+data = read.csv("fitts_law_data.csv")
+
+data$difficulty_idx = as.numeric(data$difficulty_idx)
 ```
 
 ```{r}
 # make a model predicting time from difficulty
-# include (1 + difficulty_idx|id) for multilevel modelling (fret not, this will be explained in methods3 if you're not familiar with it)
+# include (1 |id) for multilevel modelling (fret not, this will be explained in methods3 if you're not familiar with it)
 
-model = lmer() # fill in the model here
+model = lmer(avg_time ~ difficulty_idx + (1|id), data = data) # fill in the model here
 summary(model)
 r2(model) 
 ```
@@ -32,7 +34,8 @@ r2(model)
 # add the model predictions to the data frame
 # hint: mutate()
 
-
+data <- data %>%
+  mutate(fit = predict(model))
 ```
 
 

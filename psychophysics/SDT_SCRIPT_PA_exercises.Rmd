@@ -1,0 +1,351 @@
+---
+title: "Signal Detection Theory"
+subtitle: |
+  Analysing the 2-point touch discrimination data
+author: "Murillo Pagnotta"
+date: "2025-09-23"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    fig_width: 10
+    code_folding: show
+    number_sections: true
+---
+
+
+# Preface
+
+This document is based on:
+
+Zloteanu, M., & Vuorre, M. (2024). A Tutorial for Deception Detection Analysis or: How I Learned to Stop Aggregating Veracity Judgments and Embraced Signal Detection Theory Mixed Models. Journal of Nonverbal Behavior, 48(1), 161–185. https://doi.org/10.1007/s10919-024-00456-x
+
+
+# Set up
+```{r setup and packages, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+```{r}
+library(tidyverse)
+```
+
+
+# Data
+```{r}
+# Make sure the data file and analysis file are in the same folder
+
+data = read_delim("full_data.csv", delim = ";")
+
+# Anonomysing data
+anon_col <- function(x, prefix) {
+  u <- unique(x)
+  new <- paste0(prefix, formatC(sample(length(u)), width = nchar(length(u)), flag = "0"))
+  new[match(x, u)]
+}
+
+data = data %>%
+  mutate(
+    group_id = anon_col(group_id, "G"),
+    experimenter_id = anon_col(experimenter_id, "E"),
+    participant_id = anon_col(participant_id, "P")
+  )
+
+data %>%
+  mutate(
+    participant_id = factor(participant_id),
+    bodypart = factor(bodypart),
+    stim_type = factor(stim_type),
+    distance = factor(distance)
+  ) 
+
+# check NAs
+# colSums(is.na(d))
+
+glimpse(data)
+```
+
+How many participants per body_part?
+```{r}
+data %>% group_by(bodypart, participant_id) %>%
+  slice_head(n = 1) %>%
+  group_by(bodypart) %>%
+  count()
+```
+
+How many trials per participant?
+```{r}
+data %>% count(participant_id)
+```
+
+
+# Non-SDT analysis
+
+We first analyse these data with correct / incorrect classifications. Typically, this amounts to aggregating each person's data to proportions correct (in different conditions / groups), and then visualizing and modelling those.
+
+First, we create a new variable encoding response accuracy.
+
+```{r}
+data <- data %>% 
+  mutate(
+    accuracy = case_when( 
+      stim_type == "one point" & response == 1 ~ 1,
+      stim_type == "two points" & response == 2 ~ 1,
+      .default = 0
+    ))
+
+
+```
+
+We then summarize the Accuracy for each body_part and each participant_id to obtain proportion of correct responses.
+
+```{r}
+data_acc <- data %>% 
+  group_by(bodypart, participant_id) %>%
+  summarise(
+    accuracy = mean(accuracy)
+  )
+```
+
+We can then display these proportions correct as a simple histogram by body part.
+
+```{r}
+data_acc %>%
+  ggplot() +
+  geom_histogram(aes(x = accuracy),
+                 color = "palevioletred",
+                 fill = "rosybrown1"
+  ) +
+  scale_x_continuous(
+    name= "Percent correct",
+    limits = c(0, 1)
+  ) +
+  scale_y_continuous(name = "Count"
+  ) +
+  facet_wrap(~ bodypart) # facet wrap lets you make a different subplot for a variable of your choice within this plot
+```
+
+
+Run a t-test (separately for each body part) to examine if participants are responding at chance level  (50%) on average
+
+Fingertip
+```{r}
+data_acc_fingertip = data_acc %>% 
+  filter(bodypart == "fingertip") 
+
+t.test(data_acc_fingertip$accuracy, mu = 0.5) 
+```
+Check the p-value. It is very small. So, we found statistical evidence agaist the null hypothesis and in favour of the alternative hypothesis. In other words, participants were NOT responding at chance level.
+
+Upper arm
+```{r}
+data_acc_upperArm = data_acc #  ADJUST THE CODE!
+```
+Check the p-value. Is there evidence that participants were responding above chance level?
+
+We can also summarize the data to proportion correct (Accuracy) for each person at each stim_distance.
+Let's also compute the population average.
+
+```{r}
+data_acc_dist <- data %>% 
+  filter(!distance == "NA") %>% # remove noise trials
+  group_by(bodypart, distance, participant_id) %>%
+  summarise(
+    accuracy = mean(accuracy)
+  )
+
+# compute also the population average
+data_acc_dist_sum <- data_acc_dist %>% 
+  group_by(bodypart, distance) %>%
+  summarise(
+    pop_accuracy = mean(accuracy)
+  )
+
+```
+
+
+Plot accuracy (y-axis) over distance (x-axis) using geom_point() and geom_line() per participant.
+
+If you can, add a line for the population mean as well
+```{r}
+ggplot(data = data_acc_dist) # + ??
+
+# Hint: used facet_wrap() to create separate plots for body parts
+
+```
+
+
+However, this simple measure of accuracy does not differentiate between bias (e.g. to respond "1" over "2") and the ability to discriminate between one-point and two-point stimuli. Signal Detection Theory allows studying bias and sensitivity to two-point touches separately.
+
+# Signal Detection Theory
+
+In practice, the parameters of a basic SDT model can be calculated from two proportions. To calculate those proportions, we first classify each trial into four different categories:
+
+**Hits** are trials in which a two-point stimulus is presented, and the participant correctly responds "two".
+
+**Correct rejections** are trials in which a one-point stimulus is presented, and the participant correctly responds "1".
+
+**False alarms** are trials in which a one-point stimulus is presented, but the participant incorrectly responds "2".
+
+**Misses** are trials in which a two-point stimulus is presented, but the participant incorrectly responds "1".
+
+```{r}
+sdt_data <- data %>% 
+  mutate(
+    Type = case_when(
+      stim_type == "two points" & response == 2 ~ "hit", # Hit
+      stim_type == "one point" & response == 1 ~ "cr",  # Correct rejection
+      stim_type == "two points" & response == 1 ~ "miss", # Miss 
+      stim_type == "one point" & response == 2 ~ "fa", # False alarm
+    )
+  )
+
+
+glimpse(sdt_data)
+```
+
+Below is a table illustrating all the classifications' counts in the example data.
+
+```{r}
+sdt_data %>% 
+  group_by(bodypart) %>%
+  count(stim_type, response, accuracy, Type)
+```
+
+
+To calculate the SDT parameters, we must then aggregate the data and compute counts of these four categories for each stim_distance and for each participant. For computations, we also pivot the data to a "wide" format.
+
+
+```{r}
+ sdt_data <- sdt_data %>% 
+    # Aggregate per participant x distance
+  count(bodypart, participant_id, distance, Type) %>%
+  pivot_wider(
+    names_from = Type,
+    values_from = n,
+    values_fill = 0
+  )
+```
+
+
+
+The **hit rate** is then the proportion of "hits" over the sum of "hits" and "misses". The **false alarm rate** is the proportion of "false alarms" over the sum of false alarms and correct rejections. Those rates are then "z-scored" to establish the latent continuum as a standard normal distribution. Sensitivity, often called *d-prime*, is then the distance between the distributions' means. The response criterion is calculated as negative half of the sum of the z-scores. In practice, we calculate all these in R as follows:
+
+```{r}
+
+sdt_data <- sdt_data %>% 
+  mutate(
+    # hr = hit / (hit + miss),
+    hr = (hit + 0.5) / (hit + miss + 1), # with log-linear correction (because we have some zeros) 
+    # you can think of the (hit + miss + 1) as (hit + 0.5 + miss + 0.5)
+    
+    # far = fa / (fa + cr),
+    far = (fa + 0.5) / (fa + cr + 1), # with log-linear correction (because we have some zeros)
+    
+    zhr = qnorm(hr),
+    zfa = qnorm(far),
+    dprime = zhr - zfa,
+    crit = -0.5 * (zhr + zfa)
+  )
+
+
+glimpse(sdt_data)
+```
+
+
+
+We can then compute basic statistical tests on these person-specific parameters. For example, we can ask whether sensitivity (dprime) was greater than zero.
+
+FINGERTIP
+```{r}
+sdt_fingertip <- sdt_data %>%
+  filter(bodypart == "fingertip")
+
+t.test(sdt_fingertip$dprime) 
+```
+Check the p-value. Is there evidence for the alternative hypothesis that dprime was greater than zero?
+
+
+And whether participants show a liberal bias (negative criterion) or a conservative one (positive criterion).
+
+```{r}
+t.test(sdt_fingertip$crit) 
+```
+Check the p-value. Is there evidence for the alternative hypothesis that criterion was liberal or conservative?
+
+
+UPPER ARM
+```{r}
+sdt_upperarm <- sdt_data %>%
+  filter(bodypart == "upperarm")
+
+t.test(sdt_upperarm$dprime) 
+```
+
+And whether participants show a liberal bias (negative criterion) or a conservative one (positive criterion).
+
+```{r}
+t.test(sdt_upperarm$crit) 
+```
+
+Let's summarise the dataset to plot
+```{r}
+sdt_sum <- sdt_data %>%
+  group_by(bodypart, distance) %>%
+  summarise(
+    pop_dprime = mean(dprime),
+    pop_crit = mean(crit)
+  )
+```
+
+
+
+Plot dprime over distance
+```{r}
+
+ggplot(data = sdt_data) # + ??
+
+```
+
+
+
+Plot criterion over stim_dist
+When criterion is above zero, it is called 'conservative'. In this case, participants are prone to misses (less likely to respond 'two-points').
+
+When criterion is below zero, it is called 'liberal'. In this case, participants are prone to false alarms (more likely to respond 'two-points').
+
+When criterion is zero, participants are unbiased.
+
+```{r}
+ggplot(data = sdt_data) +
+  geom_point(aes(x = distance , y = crit, colour = participant_id)) +
+  geom_line(aes(x = distance , y = crit, colour = participant_id, group = participant_id)) +
+  
+  # add the population average
+  geom_line(data = sdt_sum,aes(x = distance , y = pop_crit, group = NA), colour = "black", size = 1) +
+  facet_wrap(~bodypart, scales = "free_x") + 
+  
+  theme_bw() + 
+  theme(legend.position = "none")  
+
+```
+
+
+# SDT as Generalised Linear Model
+
+## Fingertip
+```{r}
+
+data_fingertip <- data %>% filter(bodypart == "fingertip")
+fit1 <- glm(accuracy ~ distance, data = data_fingertip, family = binomial("probit"))
+
+coef(summary(fit1))
+
+```
+
+Compare the glm with the d-prime and criteria obtained above!
+*Answer:*

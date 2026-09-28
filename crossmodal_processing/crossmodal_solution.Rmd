@@ -68,6 +68,7 @@ Which variables are we interested in?
 **Write your answer here**
 
 Are the variables in the right format (e.g., factor, numeric)? If they are not, make sure they are.
+
 ```{r}
 # AUDITION 
 aud <- aud %>% 
