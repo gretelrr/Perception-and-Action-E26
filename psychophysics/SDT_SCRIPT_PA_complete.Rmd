@@ -361,7 +361,10 @@ ggplot(data = sdt_data) +
 ```
 
 
-# SDT as Generalised Linear Model
+# Accuracy as a Generalised Linear Model
+
+Here we model accuracy as a function of distance with a probit GLM (note that only two point trials are included, as the model drops NA rows). The GLM shows us the pattern of change in accuracy, but it cannot tell us why the change occurs, which is what SDT (d' and criterion) adds.
+
 
 ## Fingertip
 ```{r}
@@ -373,3 +376,13 @@ coef(summary(fit1))
 
 ```
 
+```{r}
+data_upperarm <- data %>% filter(bodypart == "upperarm")
+fit2 <- glm(accuracy ~ distance, data = data_upperarm, family = binomial("probit"))
+
+coef(summary(fit2))
+```
+Compare the glm with the d-prime and criteria obtained above!
+
+*Answer:*
+The GLM pattern matches d' and criteria obtained above. The fingertip is highly accurate at all distances and has a higher d' (1.25) and a slightly liberal criterion (-0.35), whereas on the upperarm accuracy is near chance at small distances, d' is low (0.34), and there is no clear evidence of bias (-0.02, CI includes 0). This is to show that SDT tells us why accuracy differs between body parts (mainly sensitivity), which cannot be read out of the GLM output alone.

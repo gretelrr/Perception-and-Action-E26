@@ -335,16 +335,25 @@ ggplot(data = sdt_data) +
 ```
 
 
-# SDT as Generalised Linear Model
+# Accuracy as a Generalised Linear Model
+
+Here we model accuracy as a function of distance with a probit GLM (note that only two point trials are included, as the model drops NA rows). The GLM shows us the pattern of change in accuracy, but it cannot tell us why the change occurs, which is what SDT (d' and criterion) adds.
+
 
 ## Fingertip
 ```{r}
-
 data_fingertip <- data %>% filter(bodypart == "fingertip")
 fit1 <- glm(accuracy ~ distance, data = data_fingertip, family = binomial("probit"))
 
 coef(summary(fit1))
+```
 
+## Upperarm
+```{r}
+data_upperarm <- data %>% filter(bodypart == "upperarm")
+fit2 <- glm(accuracy ~ distance, data = data_upperarm, family = binomial("probit"))
+
+coef(summary(fit2))
 ```
 
 Compare the glm with the d-prime and criteria obtained above!
