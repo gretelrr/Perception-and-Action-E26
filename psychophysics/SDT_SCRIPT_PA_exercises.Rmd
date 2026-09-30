@@ -21,13 +21,13 @@ This document is based on:
 
 Zloteanu, M., & Vuorre, M. (2024). A Tutorial for Deception Detection Analysis or: How I Learned to Stop Aggregating Veracity Judgments and Embraced Signal Detection Theory Mixed Models. Journal of Nonverbal Behavior, 48(1), 161–185. https://doi.org/10.1007/s10919-024-00456-x
 
+The exercises were created by Murillo Pagnotta and edited by Grete L Reimand
+
 
 # Set up
 ```{r setup and packages, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-
 
 
 ```{r}
