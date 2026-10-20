@@ -1,0 +1,162 @@
+---
+title: "Mousetracking Analysis - exercises"
+author: "Laura Bock Paulsen (edited by Grete Liis Reimand"
+date: "20/10/2026"
+output: html_document
+---
+
+For the analysis of your very own mouse-tracking data, we will be using a package called MouseTrap. In order to get acquainted with the package, we will play around with data from a single participant conduction the circle-square experiment. 
+
+The documentation for the package can be found here: <https://www.rdocumentation.org/packages/mousetrap/versions/3.1.5/topics/mousetrap>.
+
+Use this page to solve the following steps by finding and applying appropriate mousetrap functions. Also, writing ?function_name() in the console is great way of reading about the function in question.
+
+Call me for help whenever you get stuck (or take a quick look in the solutions file) :D
+
+
+### Install packages and load in the data
+```{r}
+# loading packages
+pacman::p_load(mousetrap, tidyverse)
+
+# loading in data
+mouse_data_raw <- read_csv('example_data/subject-3.csv')
+```
+
+
+### Turn the data into a mousetrap object using mt_import_mousetrap()
+```{r}
+
+```
+Take a moment to look at the structure that it created. What are the elements, what information does it provide?
+
+
+### Make a quick plot using the mt_plot() function
+```{r}
+
+```
+Try to understand what the lines mean and how to “read” the graph. What seems weird about it when you think about how the experiment task looked like?
+
+
+### Make a plot in which the lines are coloured by condition
+The demo-experiment had different trial types for which we have different predictions. Make a plot that distinguishes these two conditions, e.g. by different colors. 
+```{r}
+
+```
+
+
+### Mirror-symmetric mapping of movements
+Find a function that does a mirror-symmetric mapping of all the movements from the right side to the left side so that all movements overlap. Plot again. What does this function also do?
+**Hint:** Try to google "mousetrap symmetric" for help
+```{r}
+mouse_data_2 = 
+  
+mt_plot(mouse_data_2, color="trial_type")
+```
+
+
+### Plot timestamps by xpos
+The standard plotting function shows x and y coordinates. Modify it so you plot timestamps by xpos. What do you see? What is this line in the beginning?
+**Hint:** Think which variable should go on which axis
+```{r}
+
+```
+
+
+### Find a function that removes the initial phase without mouse-movement
+Find a function to remove this “line” and plot the timestamps by xpos again. 
+```{r}
+# remove initial phase
+
+```
+
+
+Before plotting again (timestamps and xpos) think about how you expect it to look. Then plot it, to see if you were right.
+```{r}
+# plot again
+mt_plot()
+```
+
+
+### Time-normalize the data
+Right now trials of different length have different amount of time point samples, which is not ideal for statistics if we want to compare trials. For that we time normalize, meaning looking at cursor position relative to its trajectory's progress (e.g. 50%) rather than absolute time stamp (e.g. 300ms). The default is 101 samples, meaning one sample per percent of progress from 0% to 100%.
+
+Apply the function mt_time_normalize()
+```{r}
+mouse_data_normalised = 
+```
+
+Now look at your data variable (the mt object) where a new matrix appeared ("tn_trajectories"). What do you notice? What does the function do? After you have thought about it yourself, check the documentation!
+
+
+### Plot the normalized trajectories
+Find out how to plot the normalized trajectories instead of the raw data.
+**Hint:** Change "use" in mt_plot (look at documentation)
+```{r}
+
+```
+
+
+### Aggregated plots
+Now we want to visualize our “findings”. Find a function that will plot averages of all the “similar” movements and all the “dissimilar” movements.
+Think: Which trajectories do we need to use, the original or the time normalized? Why? Try plotting both to see whether you were right.
+**Hint:** Find a function that creates aggregated plots
+```{r}
+
+```
+
+
+### Apply the function mt_measures()
+To get all the mouse-tracking measurements (rt, AUD etc) we can extract the data from mousetrap using mt_measures(). Look at the documentation to see which measures you get.
+
+Apply the function mt_measures() and look at the outcome in your data variable. 
+```{r}
+mouse_data_3 =
+```
+Why would you use some of these measures when reporting results?
+
+
+### Aggregating measures
+Now find a function that helps you aggregate some measures of your pleasing over the two trial_types.
+**Hint:** Look at the line "use_variables" in the function documentation
+```{r}
+mt_measures_ag = 
+```
+
+
+### Interpret the results
+Take a moment to think what these “results” could mean if this was a proper experiment which was not run by your instructor. How would you interpret this? Does this match your hypothesis? Especially look at the MAD (maximum absolute deviation from the direct path), the AUC (area under the curve) and the reaction time. 
+
+
+You have reached the end of normal exercises!!!! Well done <3<3
+
+
+
+
+## Additional exercises
+
+### Play around with the mt_time_normalize() function
+Take a moment to play around with different numbers of steps in “mt_time_normalize” and see how that changes the shape of the trajectories, esp. when using very small numbers. Discuss what the decision about normalizing implies for the data analysis and interpretation. In the end, set the steps back to the default of 101.
+```{r}
+
+```
+
+### Removing incorrect trials
+Normally, you'd want to remove incorrect trials. As the mouse_trap object does not function with tidyverse, figure out how to remove potential incorrect trials from your mousetrap object. 
+```{r}
+
+```
+
+### Discussion of mt_align
+Would the function ‘mt_align’ be useful for this data? Why or why not?
+```{r}
+
+```
+
+
+### ggplot
+As the mt_plot function uses ggplot, you can easily add themes, titles and such to make your plots look nice. Have a go at it!
+```{r}
+
+```
+
